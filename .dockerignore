@@ -1,0 +1,15 @@
+.git
+.gitignore
+models/
+input/
+output/
+user/
+*.tar
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.gguf
+__pycache__
+*.pyc
