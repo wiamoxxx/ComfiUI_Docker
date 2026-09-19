@@ -1,6 +1,9 @@
 # ==============================================================
-# ComfyUI - Offline / Air-gapped Docker Image
+# ComfyUI - Offline / Air-gapped Docker Image (NVIDIA CUDA variant)
 # ==============================================================
+# Counterpart to Dockerfile.rocm. Selected automatically by
+# build.sh when you choose the "nvidia" backend.
+#
 # Build this image on a machine with internet access, then ship
 # it (via export.sh / import.sh) to machines that have Docker +
 # the NVIDIA Container Toolkit but no internet access.

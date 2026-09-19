@@ -6,8 +6,17 @@
 #
 set -euo pipefail
 
-IMAGE="${IMAGE_NAME:-comfyui-offline}:${IMAGE_TAG:-latest}"
-OUTPUT="${OUTPUT_TAR:-comfyui-offline.tar}"
+ENV_FILE=".env"
+BACKEND="${BACKEND:-}"
+if [[ -z "$BACKEND" && -f "$ENV_FILE" ]]; then
+    BACKEND="$(grep -E '^BACKEND=' "$ENV_FILE" 2>/dev/null | tail -n1 | cut -d= -f2- || true)"
+fi
+
+DEFAULT_TAG="latest"
+[[ -n "$BACKEND" ]] && DEFAULT_TAG="${BACKEND}-latest"
+
+IMAGE="${IMAGE_NAME:-comfyui-offline}:${IMAGE_TAG:-$DEFAULT_TAG}"
+OUTPUT="${OUTPUT_TAR:-comfyui-offline${BACKEND:+-$BACKEND}.tar}"
 
 echo
 echo "Exporting Docker image..."
@@ -30,10 +39,12 @@ echo "=========================================="
 ls -lh "$OUTPUT" "${OUTPUT}.sha256"
 
 echo
-echo "Transfer BOTH of these files to each offline machine:"
+echo "Transfer ALL of these files to each offline machine:"
 echo
 echo "  $OUTPUT"
 echo "  ${OUTPUT}.sha256"
+echo "  docker-compose.yml, docker-compose.nvidia.yml, docker-compose.rocm.yml"
+echo "  .env.example, import.sh, run.sh"
 echo
 echo "Then on each target machine run:"
 echo "  ./import.sh $OUTPUT"

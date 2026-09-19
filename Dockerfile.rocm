@@ -1,0 +1,140 @@
+# ==============================================================
+# ComfyUI - Offline / Air-gapped Docker Image (AMD ROCm variant)
+# ==============================================================
+# Counterpart to Dockerfile.nvidia. Selected automatically by
+# build.sh when you choose the "rocm" backend.
+#
+# Base image: AMD's own rocm/pytorch image, which ships a
+# validated, pre-tested ROCm + PyTorch combination for a specific
+# Ubuntu/Python/PyTorch triple. Unlike Dockerfile.nvidia, PyTorch
+# is NOT pip-installed here - it's already correctly installed in
+# the base image, built against that image's exact ROCm userspace.
+# Installing a different torch build on top of it is far more
+# likely to break than help. If you need a different PyTorch/ROCm
+# pairing (e.g. for a different GPU architecture), change
+# ROCM_IMAGE to another validated tag from
+# https://hub.docker.com/r/rocm/pytorch/tags instead.
+#
+# Model weights are NOT baked into the image - they are mounted
+# at runtime from an external folder. See README.md.
+# ==============================================================
+
+ARG ROCM_IMAGE=rocm/pytorch:rocm7.2_ubuntu24.04_py3.12_pytorch_release_2.10.0
+FROM ${ROCM_IMAGE}
+
+# Pin ComfyUI to a known-good release tag so every build produces
+# the same result. Bump this deliberately, then rebuild + retest.
+ARG COMFYUI_REF=v0.36.0
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+
+# ------------------------------------------------------------
+# System dependencies
+#
+# No python3/pip/venv install here - the base image already ships
+# the exact Python + PyTorch(+ROCm) environment this is built on
+# top of. python3-dev / cmake / ninja-build are needed to build a
+# few custom-node Python dependencies that ship without a
+# prebuilt wheel for every platform.
+# ------------------------------------------------------------
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    wget \
+    curl \
+    ca-certificates \
+    build-essential \
+    cmake \
+    ninja-build \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# Some custom nodes and ComfyUI itself invoke the plain `python`
+# command. Make sure it resolves - but only create the symlink if
+# it's missing, so we never shadow an already-correct environment
+# (e.g. a conda env earlier on PATH) with a different Python.
+RUN command -v python >/dev/null 2>&1 || ln -s "$(command -v python3)" /usr/local/bin/python
+
+# Print what the base image actually shipped, for the build log -
+# this does NOT assert torch.cuda.is_available(), since no GPU
+# device is passed into the build environment; that only becomes
+# available at container runtime.
+RUN python3 -c "import torch; print('torch', torch.__version__, '| built with ROCm/HIP:', torch.version.hip)"
+
+# ------------------------------------------------------------
+# ComfyUI
+# ------------------------------------------------------------
+
+WORKDIR /opt
+
+RUN git clone --branch "${COMFYUI_REF}" --depth 1 \
+    https://github.com/comfyanonymous/ComfyUI.git
+
+WORKDIR /opt/ComfyUI
+
+# ------------------------------------------------------------
+# ComfyUI dependencies
+#
+# torch / torchvision / torchaudio are already installed by the
+# base image and matched to its ROCm userspace - strip those
+# lines from requirements.txt before installing so pip doesn't
+# "helpfully" replace the ROCm build with a generic/CPU build
+# from PyPI. Everything else (e.g. torchsde) installs normally.
+# ------------------------------------------------------------
+
+RUN grep -viE '^(torch|torchvision|torchaudio)([<>=~! ]|$)' requirements.txt \
+        > /tmp/requirements.rocm.txt \
+    && pip install -r /tmp/requirements.rocm.txt
+
+# ------------------------------------------------------------
+# Custom nodes
+# ------------------------------------------------------------
+
+COPY nodes.txt /tmp/nodes.txt
+COPY install-node-deps.sh /tmp/install-node-deps.sh
+
+RUN chmod +x /tmp/install-node-deps.sh \
+    && /tmp/install-node-deps.sh
+
+# ------------------------------------------------------------
+# Runtime directories
+#
+# These are placeholders baked into the image so ComfyUI has
+# somewhere to start even before anything is mounted. In normal
+# use every one of them is replaced by a bind mount (see
+# docker-compose.yml / README.md) - nothing written here persists.
+# ------------------------------------------------------------
+
+RUN mkdir -p \
+    /opt/ComfyUI/models \
+    /opt/ComfyUI/input \
+    /opt/ComfyUI/output \
+    /opt/ComfyUI/user
+
+# ------------------------------------------------------------
+# Entrypoint (shared with Dockerfile.nvidia)
+# ------------------------------------------------------------
+
+COPY entrypoint.sh /opt/entrypoint.sh
+RUN chmod +x /opt/entrypoint.sh
+
+WORKDIR /opt/ComfyUI
+
+EXPOSE 8188
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+    CMD curl -fsS http://127.0.0.1:8188/system_stats || exit 1
+
+ENTRYPOINT ["/opt/entrypoint.sh"]
+CMD []

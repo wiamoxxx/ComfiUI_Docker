@@ -1,3 +1,7 @@
+# Backend-agnostic base file. GPU access is added by an overlay -
+# see docker-compose.nvidia.yml / docker-compose.rocm.yml, or just
+# run ./run.sh, which picks the right overlay for you based on the
+# BACKEND recorded in .env by build.sh.
 services:
   comfyui:
     image: ${IMAGE_NAME:-comfyui-offline}:${IMAGE_TAG:-latest}
@@ -25,18 +29,7 @@ services:
       # - ${EXTRA_MODEL_PATHS_FILE:-./extra_model_paths.yaml}:/opt/ComfyUI/extra_model_paths.yaml:ro
 
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
       # Extra ComfyUI CLI flags applied at runtime, e.g. --lowvram
       - CLI_ARGS=${CLI_ARGS:-}
-
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities:
-                - gpu
 
     restart: unless-stopped

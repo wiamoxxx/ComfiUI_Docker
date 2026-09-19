@@ -1,0 +1,19 @@
+# NVIDIA overlay - merge with docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
+# (or just ./run.sh, which does this automatically based on .env)
+#
+# Requires the NVIDIA Container Toolkit on the host - see README.md.
+services:
+  comfyui:
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu

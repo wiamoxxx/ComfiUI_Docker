@@ -40,7 +40,10 @@ docker images --filter "reference=comfyui-offline"
 
 echo
 echo "Next steps:"
-echo "  1. cp .env.example .env   (then edit MODELS_PATH etc.)"
+echo "  1. cp .env.example .env"
+echo "     - set MODELS_PATH etc."
+echo "     - set BACKEND=nvidia or BACKEND=rocm to match the image you just imported"
+echo "       (the image's tag also tells you: comfyui-offline:nvidia-latest / rocm-latest)"
 echo "  2. Put your model files under the folder MODELS_PATH points to"
-echo "  3. docker compose up -d"
+echo "  3. ./run.sh"
 echo

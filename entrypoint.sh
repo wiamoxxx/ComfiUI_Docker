@@ -51,6 +51,22 @@ if [ -f "${COMFY_DIR}/extra_model_paths.yaml" ]; then
 fi
 
 # ------------------------------------------------------------
+# GPU sanity check. torch.cuda.* is the correct API for BOTH
+# backends - ROCm's PyTorch build reuses the same CUDA-shaped API
+# for HIP devices - so this one check works unmodified on
+# Dockerfile.nvidia and Dockerfile.rocm alike.
+# ------------------------------------------------------------
+python - <<'PY' || true
+import torch
+if torch.cuda.is_available():
+    print(f"GPU detected: {torch.cuda.get_device_name(0)}")
+else:
+    print("WARNING: no GPU visible to PyTorch (torch.cuda.is_available() is False).")
+    print("Check that this container was started with GPU access")
+    print("(--gpus all for NVIDIA, or --device=/dev/kfd --device=/dev/dri for ROCm).")
+PY
+
+# ------------------------------------------------------------
 # CLI_ARGS lets you pass extra ComfyUI flags at runtime without
 # rebuilding the image, e.g.:
 #   CLI_ARGS="--lowvram --preview-method auto"

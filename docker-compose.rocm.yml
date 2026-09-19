@@ -1,0 +1,20 @@
+# AMD ROCm overlay - merge with docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d
+# (or just ./run.sh, which does this automatically based on .env)
+#
+# Requires the amdgpu-dkms kernel driver on the host (no separate
+# "container toolkit" needed for ROCm - GPU access is plain device
+# nodes). See README.md.
+services:
+  comfyui:
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+      - render
+    # ComfyUI is a single inference process, but a generous shared-
+    # memory segment avoids surprises with nodes that use PyTorch's
+    # multiprocessing (e.g. some DataLoader-based upscalers).
+    shm_size: "8gb"
+    ipc: host
