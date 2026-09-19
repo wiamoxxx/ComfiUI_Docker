@@ -1,25 +1,34 @@
 services:
   comfyui:
-    image: comfyui-offline:latest
+    image: ${IMAGE_NAME:-comfyui-offline}:${IMAGE_TAG:-latest}
     container_name: comfyui-offline
 
     ports:
-      - "8188:8188"
+      - "${COMFY_PORT:-8188}:8188"
 
     volumes:
-      # Models live OUTSIDE the Docker image
-      - /data/comfyui/models:/opt/ComfyUI/models
+      # Models live OUTSIDE the Docker image. Point MODELS_PATH (in
+      # .env) at wherever you copied the model files on THIS machine.
+      # See README.md for the expected sub-folder layout.
+      - ${MODELS_PATH:-./data/models}:/opt/ComfyUI/models
 
       # User files
-      - /data/comfyui/input:/opt/ComfyUI/input
-      - /data/comfyui/output:/opt/ComfyUI/output
+      - ${INPUT_PATH:-./data/input}:/opt/ComfyUI/input
+      - ${OUTPUT_PATH:-./data/output}:/opt/ComfyUI/output
 
-      # ComfyUI user configuration
-      - /data/comfyui/user:/opt/ComfyUI/user
+      # ComfyUI user configuration (settings, saved workflows, etc.)
+      - ${USER_PATH:-./data/user}:/opt/ComfyUI/user
+
+      # Optional: drop an extra_model_paths.yaml here instead of/in
+      # addition to MODELS_PATH if your model folder isn't laid out
+      # the way ComfyUI expects. Uncomment to use.
+      # - ${EXTRA_MODEL_PATHS_FILE:-./extra_model_paths.yaml}:/opt/ComfyUI/extra_model_paths.yaml:ro
 
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+      # Extra ComfyUI CLI flags applied at runtime, e.g. --lowvram
+      - CLI_ARGS=${CLI_ARGS:-}
 
     deploy:
       resources:

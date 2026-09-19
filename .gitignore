@@ -1,0 +1,20 @@
+# Host-specific configuration
+.env
+
+# Local bind-mount targets (models/input/output/user data)
+data/
+
+# Exported images
+*.tar
+*.tar.sha256
+
+# Model/weight files, in case anyone points a mount inside the repo
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.gguf
+
+__pycache__/
+*.pyc

@@ -4,6 +4,7 @@ set -euo pipefail
 
 COMFY_DIR="/opt/ComfyUI"
 NODE_DIR="$COMFY_DIR/custom_nodes"
+FAILED=0
 
 mkdir -p "$NODE_DIR"
 
@@ -19,17 +20,25 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     repo=$(echo "$line" | awk '{print $1}')
     directory=$(echo "$line" | awk '{print $2}')
+    # Optional 3rd column: a tag/branch/commit to pin the node to.
+    # Leave it out to track that node's default branch (unpinned).
+    ref=$(echo "$line" | awk '{print $3}')
 
     echo
     echo "------------------------------------------"
     echo "Node: $directory"
     echo "Repository: $repo"
+    [[ -n "$ref" ]] && echo "Pinned ref: $ref"
     echo "------------------------------------------"
 
     cd "$NODE_DIR"
 
     if [ ! -d "$directory" ]; then
-        git clone --depth 1 "$repo" "$directory"
+        if [[ -n "$ref" ]]; then
+            git clone --branch "$ref" --depth 1 "$repo" "$directory"
+        else
+            git clone --depth 1 "$repo" "$directory"
+        fi
     else
         echo "Already exists: $directory"
     fi
@@ -39,7 +48,10 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Standard dependency file
     if [ -f requirements.txt ]; then
         echo "Installing requirements.txt..."
-        pip install -r requirements.txt
+        pip install -r requirements.txt || {
+            echo "WARNING: requirements.txt failed for $directory"
+            FAILED=1
+        }
     fi
 
     # Modern Python packaging
@@ -47,7 +59,10 @@ while IFS= read -r line || [[ -n "$line" ]]; do
        [ ! -f requirements.txt ]; then
 
         echo "Installing Python package..."
-        pip install .
+        pip install . || {
+            echo "WARNING: pip install . failed for $directory"
+            FAILED=1
+        }
     fi
 
     # ComfyUI Manager/custom-node convention
@@ -60,6 +75,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
             echo "Continuing build so the complete dependency"
             echo "problem can be inspected later."
             echo
+            FAILED=1
         }
     fi
 
@@ -81,3 +97,14 @@ pip freeze > /opt/comfyui-python-lock.txt
 
 echo "Dependency lock written to:"
 echo "/opt/comfyui-python-lock.txt"
+
+if [ "$FAILED" -ne 0 ]; then
+    echo
+    echo "=========================================="
+    echo " NOTE: one or more custom nodes reported a"
+    echo " dependency install failure above. The image"
+    echo " build did NOT stop, but that node may not"
+    echo " work at runtime. Check the log, fix the"
+    echo " version pin/ref in nodes.txt, and rebuild."
+    echo "=========================================="
+fi
