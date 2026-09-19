@@ -1,0 +1,33 @@
+services:
+  comfyui:
+    image: comfyui-offline:latest
+    container_name: comfyui-offline
+
+    ports:
+      - "8188:8188"
+
+    volumes:
+      # Models live OUTSIDE the Docker image
+      - /data/comfyui/models:/opt/ComfyUI/models
+
+      # User files
+      - /data/comfyui/input:/opt/ComfyUI/input
+      - /data/comfyui/output:/opt/ComfyUI/output
+
+      # ComfyUI user configuration
+      - /data/comfyui/user:/opt/ComfyUI/user
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+
+    restart: unless-stopped
