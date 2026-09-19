@@ -1,0 +1,14 @@
+# Repository                                      Directory
+
+https://github.com/Comfy-Org/ComfyUI-Manager     comfyui-manager
+https://github.com/cubiq/ComfyUI_essentials      ComfyUI_essentials
+https://github.com/Kijai/ComfyUI-KJNodes         ComfyUI-KJNodes
+https://github.com/ltdrdata/ComfyUI-Impact-Pack  comfyui-impact-pack
+https://github.com/ltdrdata/ComfyUI-Impact-Subpack comfyui-impact-subpack
+https://github.com/Fannovel16/comfyui_controlnet_aux comfyui_controlnet_aux
+https://github.com/cubiq/ComfyUI_IPAdapter_plus  ComfyUI_IPAdapter_plus
+https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite ComfyUI-VideoHelperSuite
+https://github.com/rgthree/rgthree-comfy         rgthree-comfy
+https://github.com/WASasquatch/was-node-suite-comfyui was-node-suite-comfyui
+https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved ComfyUI-AnimateDiff-Evolved
+https://github.com/ssitu/ComfyUI_UltimateSDUpscale ComfyUI_UltimateSDUpscale
