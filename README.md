@@ -50,7 +50,9 @@ machine only ever needs the one matching its own GPU.
 
 Because models are never copied into the image, the exported `.tar` stays a
 manageable size and you're free to reuse/reorganize your model library
-independently of the image itself.
+independently of the image itself. This includes **GGUF-quantized models**
+(supported via a baked-in custom node) — see
+[Working with GGUF models](#working-with-gguf-models).
 
 ## Prerequisites
 
@@ -153,12 +155,12 @@ models/
 ├── loras/
 ├── vae/
 ├── vae_approx/
-├── clip/
+├── clip/                # also GGUF text encoders (ComfyUI-GGUF)
 ├── clip_vision/
 ├── controlnet/
 ├── upscale_models/
 ├── embeddings/
-├── unet/
+├── unet/                # also GGUF diffusion models (ComfyUI-GGUF)
 ├── diffusers/
 ├── gligen/
 ├── hypernetworks/
@@ -268,6 +270,54 @@ for the exact format), then uncomment its line in `docker-compose.yml`:
 
 This can be used **in addition to** the `MODELS_PATH` mount, not just
 instead of it. It works the same way regardless of `BACKEND`.
+
+## Working with GGUF models
+
+The image includes [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)
+(listed in `nodes.txt`), which adds native support for models quantized to
+the **GGUF** format — the format popularized by llama.cpp. GGUF lets large
+diffusion models (Flux, SD3.5, …) run in far less VRAM by using lower-bit
+quantized weights, at some cost to quality — handy for lower-end GPUs on
+either backend.
+
+### Where GGUF files go
+
+No separate setup — GGUF files use the same `MODELS_PATH` mount as every
+other model, just in the folder matching what they contain:
+
+| Model type | Folder | Node to use |
+|---|---|---|
+| Diffusion/UNet model (e.g. `flux1-dev-Q4_0.gguf`) | `models/unet/` | **UNETLoader (GGUF)** |
+| Quantized text encoder (e.g. a GGUF T5) | `models/clip/` | **CLIPLoader (gguf)** / **DualCLIPLoader (gguf)** |
+
+Both node types live under the **bootleg** category in ComfyUI's node
+picker. In a workflow, swap the stock "Load Diffusion Model" node for
+**UNETLoader (GGUF)**, point it at your `.gguf` file, and wire it up the
+same way you would a regular checkpoint. The CLIP-side GGUF loaders can mix
+`.gguf` and regular `.safetensors`/`.bin` encoders interchangeably, so you
+only need a GGUF version of whichever part you actually want quantized.
+
+### Getting GGUF models
+
+Pre-quantized GGUF versions of popular models are published on Hugging
+Face, e.g.:
+- [city96/FLUX.1-dev-gguf](https://huggingface.co/city96/FLUX.1-dev-gguf)
+- [city96/FLUX.1-schnell-gguf](https://huggingface.co/city96/FLUX.1-schnell-gguf)
+- [city96/stable-diffusion-3.5-large-gguf](https://huggingface.co/city96/stable-diffusion-3.5-large-gguf)
+- [city96/t5-v1_1-xxl-encoder-gguf](https://huggingface.co/city96/t5-v1_1-xxl-encoder-gguf) (quantized T5 text encoder)
+
+Download these on a machine with internet access, then copy the `.gguf`
+files into `MODELS_PATH/unet` or `MODELS_PATH/clip` on the target machine
+like any other model file — no import step, no rebuild.
+
+### Notes
+
+- LoRA loading against a GGUF base model works through the regular built-in
+  LoRA loader nodes, but is considered experimental upstream.
+- This works identically on both builds: the node's only dependencies
+  (`gguf`, `sentencepiece`, `protobuf`) are plain Python packages with no
+  CUDA/ROCm-specific builds, so `install-node-deps.sh` installs them the
+  same way regardless of `BACKEND`.
 
 ## Pinned versions — why they matter
 

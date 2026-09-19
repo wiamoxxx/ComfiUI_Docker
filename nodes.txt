@@ -19,3 +19,4 @@ https://github.com/rgthree/rgthree-comfy                  rgthree-comfy
 https://github.com/WASasquatch/was-node-suite-comfyui        was-node-suite-comfyui
 https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved     ComfyUI-AnimateDiff-Evolved
 https://github.com/ssitu/ComfyUI_UltimateSDUpscale          ComfyUI_UltimateSDUpscale
+https://github.com/city96/ComfyUI-GGUF                     ComfyUI-GGUF
