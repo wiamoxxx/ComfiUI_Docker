@@ -1,3 +1,16 @@
+> # ⚠️ RETIRED — moved to AI Center
+>
+> This repository is **no longer maintained** (retired 04.10.2026).
+> ComfyUI now lives in [wiamoxxx/AI-Center](https://github.com/wiamoxxx/AI-Center):
+> the Dockerfiles, entrypoint and pinned `nodes.txt` are in `containers/comfyui/`,
+> and AI Center builds the image with **Podman** (not Docker), exports it as an
+> offline bundle (`.tar.zst` + manifest) and imports it on offline machines.
+> Start there: `containers/comfyui/README.md` and `scripts/build-comfyui-image.sh`.
+>
+> Differences you will hit if you keep using this repo: it uses Docker/compose,
+> its custom nodes are unpinned, and it pins ComfyUI `v0.36.0` (AI Center: `v0.38.2`).
+> Kept only for history. NVIDIA first; ROCm support follows in AI Center.
+
 # ComfyUI Offline Docker Image
 
 Build a self-contained ComfyUI + custom-nodes Docker image **once**, on a
